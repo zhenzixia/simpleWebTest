@@ -5,7 +5,9 @@ import (
 	"net/http"
 	"simpleWebTest/pkg/utils"
 	"strconv"
+	"github.com/quipo/statsd"
 )
+
 
 type Product struct {
 	Id	string	`json:"id"`
@@ -26,12 +28,12 @@ func NewItem() *Product {
 
 
 type ProductResource struct {
-	//DB Client
-
+	client *statsd.StatsdClient
 }
 
-func (s *ProductResource) Initialize() {
-
+func (s *ProductResource) Initialize(prefix, statsdHost string) {
+	statsdclient := statsd.NewStatsdClient(statsdHost, prefix)
+	s.client = statsdclient
 }
 
 func (s *ProductResource) Register() {

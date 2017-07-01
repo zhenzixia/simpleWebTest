@@ -8,7 +8,7 @@ import (
 
 func main() {
 	service := &resource.ProductResource{}
-	service.Initialize()
+	service.Initialize("http://13.59.145.88:8125", "test01")
 	service.Register()
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
