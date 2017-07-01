@@ -5,14 +5,15 @@ import (
 	"net/http"
 	"simpleWebTest/pkg/utils"
 	"strconv"
-	"github.com/quipo/statsd"
+	"github.com/cactus/go-statsd-client/statsd"
+	"log"
 )
 
 
 type Product struct {
 	Id	string	`json:"id"`
 	Name 	string	`json:"name"`
-	Count 	int 	`json:"count"`
+	Count 	int64 	`json:"count"`
 	Geo	Geo	`json:"geo"`
 }
 
@@ -28,12 +29,16 @@ func NewItem() *Product {
 
 
 type ProductResource struct {
-	client *statsd.StatsdClient
+	client *statsd.Client
 }
 
 func (s *ProductResource) Initialize(prefix, statsdHost string) {
-	statsdclient := statsd.NewStatsdClient(statsdHost, prefix)
-	s.client = statsdclient
+	//statsdclient := statsd.NewStatsdClient(statsdHost, prefix)
+	//client, err := statsd.NewClient("127.0.0.1:8125", "test-client")
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	//s.client = client.(statsd.Client)
 }
 
 func (s *ProductResource) Register() {
@@ -54,6 +59,32 @@ func (s *ProductResource) Register() {
 	restful.Add(service)
 }
 
+func (s *ProductResource) PostOne(request *restful.Request, response *restful.Response) {
+	count, _ := strconv.Atoi(request.QueryParameter("count"))
+	product := Product{
+		Id : utils.GenerateUUID(),
+		Count: int64(count),
+	}
+
+	log.Printf(">> Posting one record! Product ID: %v", product.Id)
+	//create a new client
+	client, err := statsd.NewClient("127.0.0.1:8125", "test-client")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	err = request.ReadEntity(&product)
+	// here you would update the user with some persistence system
+	if err == nil {
+		//response.WriteEntity(product)
+		client.Inc(product.Name, product.Count, 1.0)
+		response.WriteEntity(product)
+	} else {
+		response.WriteError(http.StatusInternalServerError,err)
+	}
+}
+
+
 func (s *ProductResource) GetAll(request *restful.Request, response *restful.Response) {
 	id := request.PathParameter("id")
 	// here you would fetch user from some persistence system
@@ -62,28 +93,12 @@ func (s *ProductResource) GetAll(request *restful.Request, response *restful.Res
 	response.WriteEntity(item)
 }
 
-
 func (s *ProductResource) GetOne(request *restful.Request, response *restful.Response) {
 	name := request.PathParameter("name")
 	//queryId := request.QueryParameter("id")
 	// here you would fetch user from some persistence system
 	item := Product{Name: name}
 	response.WriteEntity(item)
-}
-
-func (s *ProductResource) PostOne(request *restful.Request, response *restful.Response) {
-	count, _ := strconv.Atoi(request.QueryParameter("count"))
-	product := Product{
-		Id : utils.GenerateUUID(),
-		Count: count,
-	}
-	err := request.ReadEntity(&product)
-	// here you would update the user with some persistence system
-	if err == nil {
-		response.WriteEntity(product)
-	} else {
-		response.WriteError(http.StatusInternalServerError,err)
-	}
 }
 
 func (s *ProductResource) CreateOne(request *restful.Request, response *restful.Response) {
