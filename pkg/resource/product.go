@@ -12,7 +12,6 @@ import (
 
 type Product struct {
 	Id	string	`json:"id"`
-	Name 	string	`json:"name"`
 	Count 	int64 	`json:"count"`
 	Geo	Geo	`json:"geo"`
 }
@@ -29,16 +28,15 @@ func NewItem() *Product {
 
 
 type ProductResource struct {
-	client *statsd.Client
+	client statsd.Statter
 }
 
 func (s *ProductResource) Initialize(prefix, statsdHost string) {
-	//statsdclient := statsd.NewStatsdClient(statsdHost, prefix)
-	//client, err := statsd.NewClient("127.0.0.1:8125", "test-client")
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
-	//s.client = client.(statsd.Client)
+	client, err := statsd.NewClient(statsdHost, prefix)
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.client = client.(statsd.Statter)
 }
 
 func (s *ProductResource) Register() {
@@ -67,17 +65,25 @@ func (s *ProductResource) PostOne(request *restful.Request, response *restful.Re
 	}
 
 	log.Printf(">> Posting one record! Product ID: %v", product.Id)
+
 	//create a new client
-	client, err := statsd.NewClient("127.0.0.1:8125", "test-client")
+	statsdHost := "13.59.145.88:8125"
+	prefix := "my-test-client"
+	client, err := statsd.NewClient(statsdHost, prefix)
 	if err != nil {
 		log.Fatal(err)
 	}
+
 
 	err = request.ReadEntity(&product)
 	// here you would update the user with some persistence system
 	if err == nil {
 		//response.WriteEntity(product)
-		client.Inc(product.Name, product.Count, 1.0)
+		err = client.Inc(product.Geo.CityName, product.Count, 1.0)
+		if err != nil {
+			log.Printf(">> Error loading data to StatsD! Errer: %v", err.Error())
+		}
+		log.Printf(">> Success posting one record! Product ID: %v", product.Id)
 		response.WriteEntity(product)
 	} else {
 		response.WriteError(http.StatusInternalServerError,err)
@@ -94,10 +100,7 @@ func (s *ProductResource) GetAll(request *restful.Request, response *restful.Res
 }
 
 func (s *ProductResource) GetOne(request *restful.Request, response *restful.Response) {
-	name := request.PathParameter("name")
-	//queryId := request.QueryParameter("id")
-	// here you would fetch user from some persistence system
-	item := Product{Name: name}
+	item := Product{}
 	response.WriteEntity(item)
 }
 
@@ -116,3 +119,4 @@ func (s *ProductResource) CreateOne(request *restful.Request, response *restful.
 func (s *ProductResource) RemoveOne(request *restful.Request, response *restful.Response) {
 	// here you would delete the user from some persistence system
 }
+
