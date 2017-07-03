@@ -39,14 +39,14 @@ func (s *RecordResource) Initialize(statsdHost, prefix string) {
 
 func (s *RecordResource) Register() {
 	service := new(restful.WebService)
-	service.Path("/product")
+	service.Path("/record")
 	service.Consumes(restful.MIME_JSON)
 	service.Produces(restful.MIME_JSON)
 
 	service.Route(service.GET("").To(s.GetOne))
 
 	service.Route(service.POST("").To(s.PostOne)).
-		Param(service.QueryParameter("count", "count count count").DataType("int"))
+		Param(service.QueryParameter("count", "Description...").DataType("int"))
 
 	service.Route(service.PUT("").To(s.CreateOne))
 
@@ -62,7 +62,7 @@ func (s *RecordResource) PostOne(request *restful.Request, response *restful.Res
 		Count: int64(count),
 	}
 
-	log.Printf(">> Posting one record! Product ID: %v", product.Id)
+	log.Printf(">> Posting one record! ID: %v", product.Id)
 
 	err := request.ReadEntity(&product)
 	if err == nil {
@@ -70,7 +70,7 @@ func (s *RecordResource) PostOne(request *restful.Request, response *restful.Res
 		if err != nil {
 			log.Printf(">> Error loading data to StatsD! Errer: %v", err.Error())
 		}
-		log.Printf(">> Success posting one record! Product ID: %v", product.Id)
+		log.Printf(">> Success posting one record! ID: %v", product.Id)
 		response.WriteEntity(product)
 	} else {
 		response.WriteError(http.StatusInternalServerError,err)
