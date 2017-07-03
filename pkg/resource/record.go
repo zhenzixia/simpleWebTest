@@ -57,21 +57,22 @@ func (s *RecordResource) Register() {
 
 func (s *RecordResource) PostOne(request *restful.Request, response *restful.Response) {
 	count, _ := strconv.Atoi(request.QueryParameter("count"))
-	product := Record{
+	record := Record{
 		Id : utils.GenerateUUID(),
 		Count: int64(count),
 	}
 
-	log.Printf(">> Posting one record! ID: %v", product.Id)
+	err := request.ReadEntity(&record)
 
-	err := request.ReadEntity(&product)
+	log.Printf(">> Posting one record! Record: %+v ", record) 
+
 	if err == nil {
-		err = s.client.Inc(product.Geo.CityName, product.Count, 1.0)
+		err = s.client.Inc(record.Geo.CityName, record.Count, 1.0)
 		if err != nil {
 			log.Printf(">> Error loading data to StatsD! Errer: %v", err.Error())
 		}
-		log.Printf(">> Success posting one record! ID: %v", product.Id)
-		response.WriteEntity(product)
+		log.Printf(">> Success posting one record! Record: %v", record)
+		response.WriteEntity(record)
 	} else {
 		response.WriteError(http.StatusInternalServerError,err)
 	}
