@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"github.com/cactus/go-statsd-client/statsd"
 	"log"
+	"time"
 )
 
 type Record struct {
@@ -30,11 +31,21 @@ type RecordResource struct {
 }
 
 func (s *RecordResource) Initialize(statsdHost, prefix string) {
+	/*
 	client, err := statsd.NewClient(statsdHost, prefix)
 	if err != nil {
 		log.Fatal(err)
 	}
 	s.client = client.(statsd.Statter)
+	*/
+
+	//Use buffered client in improve performance
+	bufferdClient, err := statsd.NewBufferedClient(statsdHost, prefix, 1*time.Second, 1024)
+	if err != nil {
+		log.Fatal(err)
+	}
+	s.client = bufferdClient.(statsd.Statter)
+
 }
 
 func (s *RecordResource) Register() {
